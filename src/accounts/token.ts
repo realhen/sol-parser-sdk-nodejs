@@ -1,11 +1,10 @@
-import { PublicKey } from "@solana/web3.js";
 import type { EventMetadata } from "../core/metadata.js";
 import type { DexEvent, TokenAccountEvent, TokenInfoEvent } from "../core/dex_event.js";
 import type { AccountData } from "./types.js";
 import { readPubkey, readU64LE } from "../util/binary.js";
 
-const TOKEN_PROGRAM = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").toBase58();
-const TOKEN_2022 = new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb").toBase58();
+const TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const TOKEN_2022 = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 
 const MINT_SIZE = 82;
 const SUPPLY_OFF = 36;
