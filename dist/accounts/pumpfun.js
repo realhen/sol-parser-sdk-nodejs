@@ -1,16 +1,21 @@
 import { hasDiscriminator } from "./utils.js";
-import { readI64LE, readPubkey, readU128LE, readU16LE, readU32LE, readU64LE, readU8 } from "../util/binary.js";
-import { PUMP_FEES_PROGRAM_ID, PUMPFUN_PROGRAM_ID } from "../instr/program_ids.js";
+import { readI64LE, readPubkey, readU128LE, readU16LE, readU32LE, readU64LE, readU8, } from "../util/binary.js";
+import { PUMP_FEES_PROGRAM_ID, PUMPFUN_PROGRAM_ID, } from "../instr/program_ids.js";
 const GLOBAL_DISC = Uint8Array.from([167, 232, 232, 177, 200, 108, 114, 127]);
 const GLOBAL_BODY = 1037;
-const BONDING_CURVE_DISC = Uint8Array.from([23, 183, 248, 55, 96, 216, 172, 96]);
-const BONDING_CURVE_BODY = 107;
-const BONDING_CURVE_CREATOR_FEE_BODY = 116;
+const BONDING_CURVE_DISC = Uint8Array.from([
+    23, 183, 248, 55, 96, 216, 172, 96,
+]);
+const BONDING_CURVE_FIELD_BOUNDARIES = [41, 73, 74, 75, 107, 115, 116];
 const BONDING_CURVE_HOLDER_REWARD_BODY = 117;
 const FEE_CONFIG_DISC = Uint8Array.from([143, 52, 146, 187, 219, 123, 76, 155]);
-const GLOBAL_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([202, 42, 246, 43, 142, 190, 30, 255]);
+const GLOBAL_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([
+    202, 42, 246, 43, 142, 190, 30, 255,
+]);
 const SHARING_CONFIG_DISC = Uint8Array.from([216, 74, 9, 0, 56, 140, 93, 75]);
-const USER_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([86, 255, 112, 14, 102, 53, 154, 250]);
+const USER_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([
+    86, 255, 112, 14, 102, 53, 154, 250,
+]);
 const MAX_FEE_TIERS = 64;
 const MAX_SHAREHOLDERS = 64;
 export function isPumpfunGlobalAccount(data) {
@@ -47,9 +52,14 @@ function readFees(data, offset) {
     const lp_fee_bps = readU64LE(data, offset);
     const protocol_fee_bps = readU64LE(data, offset + 8);
     const creator_fee_bps = readU64LE(data, offset + 16);
-    if (lp_fee_bps === null || protocol_fee_bps === null || creator_fee_bps === null)
+    if (lp_fee_bps === null ||
+        protocol_fee_bps === null ||
+        creator_fee_bps === null)
         return null;
-    return { value: { lp_fee_bps, protocol_fee_bps, creator_fee_bps }, next: offset + 24 };
+    return {
+        value: { lp_fee_bps, protocol_fee_bps, creator_fee_bps },
+        next: offset + 24,
+    };
 }
 function readFeeTiers(data, offset) {
     const len = readU32LE(data, offset);
@@ -231,21 +241,36 @@ export function parsePumpfunGlobal(account, metadata) {
         initial_virtual_quote_reserves,
         whitelisted_quote_mints,
     };
-    const ev = { metadata, pubkey: account.pubkey, global };
+    const ev = {
+        metadata,
+        pubkey: account.pubkey,
+        global,
+    };
     return { PumpFunGlobalAccount: ev };
 }
+/**
+ * Decodes a bonding curve at a complete historical or current field boundary.
+ * @param account - Account bytes, including the eight-byte Anchor discriminator.
+ * @param metadata - Caller-provided notification context.
+ * @returns The decoded curve, or null for a wrong discriminator or partial field.
+ * @remarks Fields absent from historical layouts default to zero/false and the
+ * all-zero public key. This decoder does not validate the account owner; use
+ * parseAccountUnified or validate ownership before calling it directly.
+ */
 export function parsePumpfunBondingCurve(account, metadata) {
-    if (account.data.length < 8 + BONDING_CURVE_BODY)
-        return null;
     const bodyLength = account.data.length - 8;
-    if (bodyLength !== BONDING_CURVE_BODY &&
-        bodyLength !== BONDING_CURVE_CREATOR_FEE_BODY &&
-        bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY) {
+    if (bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY &&
+        !BONDING_CURVE_FIELD_BOUNDARIES.includes(bodyLength)) {
         return null;
     }
     if (!isPumpfunBondingCurveAccount(account.data))
         return null;
-    const d = account.data.subarray(8);
+    const body = account.data.subarray(8);
+    const d = bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY
+        ? new Uint8Array(BONDING_CURVE_HOLDER_REWARD_BODY)
+        : body;
+    if (d !== body)
+        d.set(body);
     let o = 0;
     const virtual_token_reserves = readU64LE(d, o);
     if (virtual_token_reserves === null)
@@ -348,7 +373,11 @@ export function parsePumpfunFeeConfig(account, metadata) {
         fee_tiers: feeTiers.value,
         stable_fee_tiers: stableFeeTiers.value,
     };
-    const ev = { metadata, pubkey: account.pubkey, fee_config };
+    const ev = {
+        metadata,
+        pubkey: account.pubkey,
+        fee_config,
+    };
     return { PumpFunFeeConfigAccount: ev };
 }
 export function parsePumpfunSharingConfig(account, metadata) {
@@ -394,7 +423,11 @@ export function parsePumpfunSharingConfig(account, metadata) {
         admin_revoked,
         shareholders: shareholders.value,
     };
-    const ev = { metadata, pubkey: account.pubkey, sharing_config };
+    const ev = {
+        metadata,
+        pubkey: account.pubkey,
+        sharing_config,
+    };
     return { PumpFunSharingConfigAccount: ev };
 }
 export function parsePumpfunGlobalVolumeAccumulator(account, metadata) {
@@ -520,7 +553,8 @@ export function parsePumpfunUserVolumeAccumulator(account, metadata) {
     return { PumpFunUserVolumeAccumulatorAccount: ev };
 }
 export function parsePumpfunAccount(account, metadata) {
-    if (account.owner !== PUMPFUN_PROGRAM_ID && account.owner !== PUMP_FEES_PROGRAM_ID)
+    if (account.owner !== PUMPFUN_PROGRAM_ID &&
+        account.owner !== PUMP_FEES_PROGRAM_ID)
         return null;
     if (isPumpfunFeeConfigAccount(account.data))
         return parsePumpfunFeeConfig(account, metadata);

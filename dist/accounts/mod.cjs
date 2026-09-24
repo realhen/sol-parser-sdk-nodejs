@@ -1,9 +1,7 @@
 "use strict";
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -17,14 +15,6 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // dist/accounts/mod.js
@@ -374,8 +364,142 @@ function hasDiscriminator(data, disc) {
   return true;
 }
 
+// node_modules/base-x/src/esm/index.js
+function base(ALPHABET2) {
+  if (ALPHABET2.length >= 255) {
+    throw new TypeError("Alphabet too long");
+  }
+  const BASE_MAP = new Uint8Array(256);
+  for (let j = 0; j < BASE_MAP.length; j++) {
+    BASE_MAP[j] = 255;
+  }
+  for (let i = 0; i < ALPHABET2.length; i++) {
+    const x = ALPHABET2.charAt(i);
+    const xc = x.charCodeAt(0);
+    if (BASE_MAP[xc] !== 255) {
+      throw new TypeError(x + " is ambiguous");
+    }
+    BASE_MAP[xc] = i;
+  }
+  const BASE = ALPHABET2.length;
+  const LEADER = ALPHABET2.charAt(0);
+  const FACTOR = Math.log(BASE) / Math.log(256);
+  const iFACTOR = Math.log(256) / Math.log(BASE);
+  function encode(source) {
+    if (source instanceof Uint8Array) {
+    } else if (ArrayBuffer.isView(source)) {
+      source = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+    } else if (Array.isArray(source)) {
+      source = Uint8Array.from(source);
+    }
+    if (!(source instanceof Uint8Array)) {
+      throw new TypeError("Expected Uint8Array");
+    }
+    if (source.length === 0) {
+      return "";
+    }
+    let zeroes = 0;
+    let length = 0;
+    let pbegin = 0;
+    const pend = source.length;
+    while (pbegin !== pend && source[pbegin] === 0) {
+      pbegin++;
+      zeroes++;
+    }
+    const size = (pend - pbegin) * iFACTOR + 1 >>> 0;
+    const b58 = new Uint8Array(size);
+    while (pbegin !== pend) {
+      let carry = source[pbegin];
+      let i = 0;
+      for (let it1 = size - 1; (carry !== 0 || i < length) && it1 !== -1; it1--, i++) {
+        carry += 256 * b58[it1] >>> 0;
+        b58[it1] = carry % BASE >>> 0;
+        carry = carry / BASE >>> 0;
+      }
+      if (carry !== 0) {
+        throw new Error("Non-zero carry");
+      }
+      length = i;
+      pbegin++;
+    }
+    let it2 = size - length;
+    while (it2 !== size && b58[it2] === 0) {
+      it2++;
+    }
+    let str = LEADER.repeat(zeroes);
+    for (; it2 < size; ++it2) {
+      str += ALPHABET2.charAt(b58[it2]);
+    }
+    return str;
+  }
+  function decodeUnsafe(source) {
+    if (typeof source !== "string") {
+      throw new TypeError("Expected String");
+    }
+    if (source.length === 0) {
+      return new Uint8Array();
+    }
+    let psz = 0;
+    let zeroes = 0;
+    let length = 0;
+    while (source[psz] === LEADER) {
+      zeroes++;
+      psz++;
+    }
+    const size = (source.length - psz) * FACTOR + 1 >>> 0;
+    const b256 = new Uint8Array(size);
+    while (psz < source.length) {
+      const charCode = source.charCodeAt(psz);
+      if (charCode > 255) {
+        return;
+      }
+      let carry = BASE_MAP[charCode];
+      if (carry === 255) {
+        return;
+      }
+      let i = 0;
+      for (let it3 = size - 1; (carry !== 0 || i < length) && it3 !== -1; it3--, i++) {
+        carry += BASE * b256[it3] >>> 0;
+        b256[it3] = carry % 256 >>> 0;
+        carry = carry / 256 >>> 0;
+      }
+      if (carry !== 0) {
+        throw new Error("Non-zero carry");
+      }
+      length = i;
+      psz++;
+    }
+    let it4 = size - length;
+    while (it4 !== size && b256[it4] === 0) {
+      it4++;
+    }
+    const vch = new Uint8Array(zeroes + (size - it4));
+    let j = zeroes;
+    while (it4 !== size) {
+      vch[j++] = b256[it4++];
+    }
+    return vch;
+  }
+  function decode(string) {
+    const buffer = decodeUnsafe(string);
+    if (buffer) {
+      return buffer;
+    }
+    throw new Error("Non-base" + BASE + " character");
+  }
+  return {
+    encode,
+    decodeUnsafe,
+    decode
+  };
+}
+var esm_default = base;
+
+// node_modules/bs58/src/esm/index.js
+var ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+var esm_default2 = esm_default(ALPHABET);
+
 // dist/accounts/nonce.js
-var import_bs58 = __toESM(require("bs58"), 1);
 var NONCE_SIZE = 80;
 var NONCE_DISC = Uint8Array.from([1, 0, 0, 0, 1, 0, 0, 0]);
 function isNonceAccount(data) {
@@ -385,8 +509,8 @@ function parseNonceAccount(account, metadata) {
   const { data } = account;
   if (account.owner !== "11111111111111111111111111111111" || data.length !== NONCE_SIZE || !isNonceAccount(data))
     return null;
-  const authority = import_bs58.default.encode(data.subarray(8, 40));
-  const nonce = import_bs58.default.encode(data.subarray(40, 72));
+  const authority = esm_default2.encode(data.subarray(8, 40));
+  const nonce = esm_default2.encode(data.subarray(40, 72));
   const ev = {
     metadata,
     pubkey: account.pubkey,
@@ -401,7 +525,6 @@ function parseNonceAccount(account, metadata) {
 }
 
 // dist/util/binary.js
-var import_bs582 = __toESM(require("bs58"), 1);
 function readU8(u8, o) {
   if (o >= u8.length)
     return null;
@@ -441,7 +564,7 @@ function readU128LE(u8, o) {
 function readPubkey(u8, o) {
   if (o + 32 > u8.length)
     return null;
-  return import_bs582.default.encode(u8.subarray(o, o + 32));
+  return esm_default2.encode(u8.subarray(o, o + 32));
 }
 
 // dist/accounts/token.js
@@ -541,9 +664,9 @@ function parseTokenAccount(account, metadata) {
 var GLOBAL_DISC = Uint8Array.from([149, 8, 156, 202, 160, 252, 176, 217]);
 var POOL_DISC = Uint8Array.from([241, 154, 109, 4, 17, 177, 109, 188]);
 var GLOBAL_BODY = 634;
-var POOL_LEGACY_BODY = 244;
+var POOL_LEGACY_ALLOCATED_BODY = 244;
+var POOL_FIELD_BOUNDARIES = [203, 235, 236, 237, 253, 261, 262];
 var POOL_BOOST_BODY = 253;
-var POOL_CREATOR_FEE_BODY = 262;
 var POOL_BODY = 263;
 function isGlobalConfigAccount(data) {
   return hasDiscriminator(data, GLOBAL_DISC);
@@ -636,15 +759,17 @@ function parsePumpswapGlobalConfig(account, metadata) {
   return { PumpSwapGlobalConfigAccount: ev };
 }
 function parsePumpswapPool(account, metadata) {
-  if (account.data.length < 8 + POOL_LEGACY_BODY)
-    return null;
   const bodyLength = account.data.length - 8;
-  if (bodyLength !== POOL_LEGACY_BODY && bodyLength !== POOL_BOOST_BODY && bodyLength !== POOL_CREATOR_FEE_BODY && bodyLength < POOL_BODY) {
+  const body = account.data.subarray(8);
+  const isLegacyAllocation = bodyLength === POOL_LEGACY_ALLOCATED_BODY && body.subarray(237).every((byte) => byte === 0);
+  if (bodyLength < POOL_BODY && !POOL_FIELD_BOUNDARIES.includes(bodyLength) && !isLegacyAllocation) {
     return null;
   }
   if (!isPoolAccount(account.data))
     return null;
-  const d = account.data.subarray(8);
+  const d = bodyLength < POOL_BODY ? new Uint8Array(POOL_BODY) : body;
+  if (d !== body)
+    d.set(body);
   let o = 0;
   const pool_bump = readU8(d, o);
   if (pool_bump === null)
@@ -749,14 +874,40 @@ function parsePumpswapAccount(account, metadata) {
 // dist/accounts/pumpfun.js
 var GLOBAL_DISC2 = Uint8Array.from([167, 232, 232, 177, 200, 108, 114, 127]);
 var GLOBAL_BODY2 = 1037;
-var BONDING_CURVE_DISC = Uint8Array.from([23, 183, 248, 55, 96, 216, 172, 96]);
-var BONDING_CURVE_BODY = 107;
-var BONDING_CURVE_CREATOR_FEE_BODY = 116;
+var BONDING_CURVE_DISC = Uint8Array.from([
+  23,
+  183,
+  248,
+  55,
+  96,
+  216,
+  172,
+  96
+]);
+var BONDING_CURVE_FIELD_BOUNDARIES = [41, 73, 74, 75, 107, 115, 116];
 var BONDING_CURVE_HOLDER_REWARD_BODY = 117;
 var FEE_CONFIG_DISC = Uint8Array.from([143, 52, 146, 187, 219, 123, 76, 155]);
-var GLOBAL_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([202, 42, 246, 43, 142, 190, 30, 255]);
+var GLOBAL_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([
+  202,
+  42,
+  246,
+  43,
+  142,
+  190,
+  30,
+  255
+]);
 var SHARING_CONFIG_DISC = Uint8Array.from([216, 74, 9, 0, 56, 140, 93, 75]);
-var USER_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([86, 255, 112, 14, 102, 53, 154, 250]);
+var USER_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([
+  86,
+  255,
+  112,
+  14,
+  102,
+  53,
+  154,
+  250
+]);
 var MAX_FEE_TIERS = 64;
 var MAX_SHAREHOLDERS = 64;
 function isPumpfunGlobalAccount(data) {
@@ -795,7 +946,10 @@ function readFees(data, offset) {
   const creator_fee_bps = readU64LE(data, offset + 16);
   if (lp_fee_bps === null || protocol_fee_bps === null || creator_fee_bps === null)
     return null;
-  return { value: { lp_fee_bps, protocol_fee_bps, creator_fee_bps }, next: offset + 24 };
+  return {
+    value: { lp_fee_bps, protocol_fee_bps, creator_fee_bps },
+    next: offset + 24
+  };
 }
 function readFeeTiers(data, offset) {
   const len = readU32LE(data, offset);
@@ -977,19 +1131,24 @@ function parsePumpfunGlobal(account, metadata) {
     initial_virtual_quote_reserves,
     whitelisted_quote_mints
   };
-  const ev = { metadata, pubkey: account.pubkey, global };
+  const ev = {
+    metadata,
+    pubkey: account.pubkey,
+    global
+  };
   return { PumpFunGlobalAccount: ev };
 }
 function parsePumpfunBondingCurve(account, metadata) {
-  if (account.data.length < 8 + BONDING_CURVE_BODY)
-    return null;
   const bodyLength = account.data.length - 8;
-  if (bodyLength !== BONDING_CURVE_BODY && bodyLength !== BONDING_CURVE_CREATOR_FEE_BODY && bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY) {
+  if (bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY && !BONDING_CURVE_FIELD_BOUNDARIES.includes(bodyLength)) {
     return null;
   }
   if (!isPumpfunBondingCurveAccount(account.data))
     return null;
-  const d = account.data.subarray(8);
+  const body = account.data.subarray(8);
+  const d = bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY ? new Uint8Array(BONDING_CURVE_HOLDER_REWARD_BODY) : body;
+  if (d !== body)
+    d.set(body);
   let o = 0;
   const virtual_token_reserves = readU64LE(d, o);
   if (virtual_token_reserves === null)
@@ -1092,7 +1251,11 @@ function parsePumpfunFeeConfig(account, metadata) {
     fee_tiers: feeTiers.value,
     stable_fee_tiers: stableFeeTiers.value
   };
-  const ev = { metadata, pubkey: account.pubkey, fee_config };
+  const ev = {
+    metadata,
+    pubkey: account.pubkey,
+    fee_config
+  };
   return { PumpFunFeeConfigAccount: ev };
 }
 function parsePumpfunSharingConfig(account, metadata) {
@@ -1138,7 +1301,11 @@ function parsePumpfunSharingConfig(account, metadata) {
     admin_revoked,
     shareholders: shareholders.value
   };
-  const ev = { metadata, pubkey: account.pubkey, sharing_config };
+  const ev = {
+    metadata,
+    pubkey: account.pubkey,
+    sharing_config
+  };
   return { PumpFunSharingConfigAccount: ev };
 }
 function parsePumpfunGlobalVolumeAccumulator(account, metadata) {
@@ -1284,7 +1451,6 @@ function parsePumpfunAccount(account, metadata) {
 }
 
 // dist/accounts/raydium_orca.js
-var import_bs583 = __toESM(require("bs58"), 1);
 var CLMM_AMM_CONFIG_DISC = Uint8Array.from([218, 244, 33, 104, 203, 203, 43, 111]);
 var CLMM_POOL_STATE_DISC = Uint8Array.from([247, 237, 227, 245, 215, 195, 222, 70]);
 var CLMM_TICK_ARRAY_STATE_DISC = Uint8Array.from([192, 155, 85, 205, 49, 249, 129, 42]);
@@ -1354,7 +1520,7 @@ var Reader = class {
   }
   pubkey() {
     const start = this.require(32);
-    return import_bs583.default.encode(this.data.subarray(start, start + 32));
+    return esm_default2.encode(this.data.subarray(start, start + 32));
   }
   bytes(len) {
     const start = this.require(len);

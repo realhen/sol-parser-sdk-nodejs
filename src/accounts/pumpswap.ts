@@ -8,16 +8,22 @@ import type {
 } from "../core/dex_event.js";
 import type { AccountData } from "./types.js";
 import { hasDiscriminator } from "./utils.js";
-import { readPubkey, readU128LE, readU64LE, readU16LE, readU8 } from "../util/binary.js";
+import {
+  readPubkey,
+  readU128LE,
+  readU64LE,
+  readU16LE,
+  readU8,
+} from "../util/binary.js";
 import { PUMPSWAP_PROGRAM_ID } from "../instr/program_ids.js";
 
 const GLOBAL_DISC = Uint8Array.from([149, 8, 156, 202, 160, 252, 176, 217]);
 const POOL_DISC = Uint8Array.from([241, 154, 109, 4, 17, 177, 109, 188]);
 
 const GLOBAL_BODY = 634;
-const POOL_LEGACY_BODY = 244;
+const POOL_LEGACY_ALLOCATED_BODY = 244;
+const POOL_FIELD_BOUNDARIES = [203, 235, 236, 237, 253, 261, 262];
 const POOL_BOOST_BODY = 253;
-const POOL_CREATOR_FEE_BODY = 262;
 const POOL_BODY = 263;
 
 export function isGlobalConfigAccount(data: Uint8Array): boolean {
@@ -28,7 +34,10 @@ export function isPoolAccount(data: Uint8Array): boolean {
   return hasDiscriminator(data, POOL_DISC);
 }
 
-export function parsePumpswapGlobalConfig(account: AccountData, metadata: EventMetadata): DexEvent | null {
+export function parsePumpswapGlobalConfig(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   if (account.data.length < 8 + GLOBAL_BODY) return null;
   if (!isGlobalConfigAccount(account.data)) return null;
   const d = account.data.subarray(8);
@@ -100,19 +109,35 @@ export function parsePumpswapGlobalConfig(account: AccountData, metadata: EventM
   return { PumpSwapGlobalConfigAccount: ev };
 }
 
-export function parsePumpswapPool(account: AccountData, metadata: EventMetadata): DexEvent | null {
-  if (account.data.length < 8 + POOL_LEGACY_BODY) return null;
+/**
+ * Decodes a pool at a complete historical or current field boundary.
+ * @param account - Account bytes, including the eight-byte Anchor discriminator.
+ * @param metadata - Caller-provided notification context.
+ * @returns The decoded pool, or null for a wrong discriminator or partial field.
+ * @remarks Missing historical fields default to zero/false and the all-zero
+ * public key. The legacy 252-byte allocation is accepted only with zero padding
+ * after the cashback flag. This decoder does not validate the account owner;
+ * use parseAccountUnified or validate ownership before calling it directly.
+ */
+export function parsePumpswapPool(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   const bodyLength = account.data.length - 8;
+  const body = account.data.subarray(8);
+  const isLegacyAllocation =
+    bodyLength === POOL_LEGACY_ALLOCATED_BODY &&
+    body.subarray(237).every((byte) => byte === 0);
   if (
-    bodyLength !== POOL_LEGACY_BODY &&
-    bodyLength !== POOL_BOOST_BODY &&
-    bodyLength !== POOL_CREATOR_FEE_BODY &&
-    bodyLength < POOL_BODY
+    bodyLength < POOL_BODY &&
+    !POOL_FIELD_BOUNDARIES.includes(bodyLength) &&
+    !isLegacyAllocation
   ) {
     return null;
   }
   if (!isPoolAccount(account.data)) return null;
-  const d = account.data.subarray(8);
+  const d = bodyLength < POOL_BODY ? new Uint8Array(POOL_BODY) : body;
+  if (d !== body) d.set(body);
   let o = 0;
   const pool_bump = readU8(d, o);
   if (pool_bump === null) return null;
@@ -192,9 +217,13 @@ export function parsePumpswapPool(account: AccountData, metadata: EventMetadata)
   return { PumpSwapPoolAccount: ev };
 }
 
-export function parsePumpswapAccount(account: AccountData, metadata: EventMetadata): DexEvent | null {
+export function parsePumpswapAccount(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   if (account.owner !== PUMPSWAP_PROGRAM_ID) return null;
-  if (isGlobalConfigAccount(account.data)) return parsePumpswapGlobalConfig(account, metadata);
+  if (isGlobalConfigAccount(account.data))
+    return parsePumpswapGlobalConfig(account, metadata);
   if (isPoolAccount(account.data)) return parsePumpswapPool(account, metadata);
   return null;
 }

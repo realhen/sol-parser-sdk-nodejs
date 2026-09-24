@@ -36,7 +36,7 @@ Account support is limited to the layouts implemented upstream: Pump.fun and Pum
 
 ## Build and upstream tracking
 
-Fork version: `0.5.15-browser.1`. Upstream base: [`0xfnzero/sol-parser-sdk-nodejs` at `dc40ffa41f382e6d284e314a9666a7aeb42b7c4a`](https://github.com/0xfnzero/sol-parser-sdk-nodejs/commit/dc40ffa41f382e6d284e314a9666a7aeb42b7c4a) (upstream package version `0.5.15`).
+Fork version: `0.5.15-browser.2`. Upstream base: [`0xfnzero/sol-parser-sdk-nodejs` at `dc40ffa41f382e6d284e314a9666a7aeb42b7c4a`](https://github.com/0xfnzero/sol-parser-sdk-nodejs/commit/dc40ffa41f382e6d284e314a9666a7aeb42b7c4a) (upstream package version `0.5.15`).
 
 ```sh
 npm ci --ignore-scripts
@@ -45,3 +45,7 @@ npm run format:check
 ```
 
 `dist/` is committed so pinned GitHub-commit installs need no `prepare` script or build toolchain. Runtime dependencies are only `bs58` and `buffer`. Upstream transport source stays in the repository for comparison and future merges but is excluded from the compiled package. `src/browser.ts` is the build root; event filters were separated from gRPC types, and public-key encoding uses `bs58` directly.
+
+CommonJS distributions bundle `bs58` and `base-x` to preserve default-export interop; `buffer` remains an explicit external dependency. ESM output imports both declared runtime dependencies normally.
+
+Historical Pump.fun curves and PumpSwap pools decode at complete serialized field boundaries, with absent fields defaulted to zero/false or the all-zero public key. Partial public keys and partial numeric fields are rejected. The legacy 252-byte PumpSwap allocation is accepted only when its seven reserved bytes after the cashback flag are zero.

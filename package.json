@@ -1,6 +1,6 @@
 {
   "name": "sol-parser-sdk",
-  "version": "0.5.15-browser.1",
+  "version": "0.5.15-browser.2",
   "description": "Browser-safe Solana account and DEX log decoders; no transport clients",
   "main": "./dist/browser.js",
   "types": "./dist/browser.d.ts",

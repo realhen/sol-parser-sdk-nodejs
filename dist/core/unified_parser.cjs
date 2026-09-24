@@ -1,9 +1,7 @@
 "use strict";
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -17,14 +15,6 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // dist/core/unified_parser.js
@@ -233,8 +223,142 @@ function nowUs() {
   return Math.floor(Date.now() * 1e3);
 }
 
+// node_modules/base-x/src/esm/index.js
+function base(ALPHABET2) {
+  if (ALPHABET2.length >= 255) {
+    throw new TypeError("Alphabet too long");
+  }
+  const BASE_MAP = new Uint8Array(256);
+  for (let j = 0; j < BASE_MAP.length; j++) {
+    BASE_MAP[j] = 255;
+  }
+  for (let i = 0; i < ALPHABET2.length; i++) {
+    const x = ALPHABET2.charAt(i);
+    const xc = x.charCodeAt(0);
+    if (BASE_MAP[xc] !== 255) {
+      throw new TypeError(x + " is ambiguous");
+    }
+    BASE_MAP[xc] = i;
+  }
+  const BASE = ALPHABET2.length;
+  const LEADER = ALPHABET2.charAt(0);
+  const FACTOR = Math.log(BASE) / Math.log(256);
+  const iFACTOR = Math.log(256) / Math.log(BASE);
+  function encode(source) {
+    if (source instanceof Uint8Array) {
+    } else if (ArrayBuffer.isView(source)) {
+      source = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+    } else if (Array.isArray(source)) {
+      source = Uint8Array.from(source);
+    }
+    if (!(source instanceof Uint8Array)) {
+      throw new TypeError("Expected Uint8Array");
+    }
+    if (source.length === 0) {
+      return "";
+    }
+    let zeroes = 0;
+    let length = 0;
+    let pbegin = 0;
+    const pend = source.length;
+    while (pbegin !== pend && source[pbegin] === 0) {
+      pbegin++;
+      zeroes++;
+    }
+    const size = (pend - pbegin) * iFACTOR + 1 >>> 0;
+    const b58 = new Uint8Array(size);
+    while (pbegin !== pend) {
+      let carry = source[pbegin];
+      let i = 0;
+      for (let it1 = size - 1; (carry !== 0 || i < length) && it1 !== -1; it1--, i++) {
+        carry += 256 * b58[it1] >>> 0;
+        b58[it1] = carry % BASE >>> 0;
+        carry = carry / BASE >>> 0;
+      }
+      if (carry !== 0) {
+        throw new Error("Non-zero carry");
+      }
+      length = i;
+      pbegin++;
+    }
+    let it2 = size - length;
+    while (it2 !== size && b58[it2] === 0) {
+      it2++;
+    }
+    let str = LEADER.repeat(zeroes);
+    for (; it2 < size; ++it2) {
+      str += ALPHABET2.charAt(b58[it2]);
+    }
+    return str;
+  }
+  function decodeUnsafe(source) {
+    if (typeof source !== "string") {
+      throw new TypeError("Expected String");
+    }
+    if (source.length === 0) {
+      return new Uint8Array();
+    }
+    let psz = 0;
+    let zeroes = 0;
+    let length = 0;
+    while (source[psz] === LEADER) {
+      zeroes++;
+      psz++;
+    }
+    const size = (source.length - psz) * FACTOR + 1 >>> 0;
+    const b256 = new Uint8Array(size);
+    while (psz < source.length) {
+      const charCode = source.charCodeAt(psz);
+      if (charCode > 255) {
+        return;
+      }
+      let carry = BASE_MAP[charCode];
+      if (carry === 255) {
+        return;
+      }
+      let i = 0;
+      for (let it3 = size - 1; (carry !== 0 || i < length) && it3 !== -1; it3--, i++) {
+        carry += BASE * b256[it3] >>> 0;
+        b256[it3] = carry % 256 >>> 0;
+        carry = carry / 256 >>> 0;
+      }
+      if (carry !== 0) {
+        throw new Error("Non-zero carry");
+      }
+      length = i;
+      psz++;
+    }
+    let it4 = size - length;
+    while (it4 !== size && b256[it4] === 0) {
+      it4++;
+    }
+    const vch = new Uint8Array(zeroes + (size - it4));
+    let j = zeroes;
+    while (it4 !== size) {
+      vch[j++] = b256[it4++];
+    }
+    return vch;
+  }
+  function decode(string) {
+    const buffer = decodeUnsafe(string);
+    if (buffer) {
+      return buffer;
+    }
+    throw new Error("Non-base" + BASE + " character");
+  }
+  return {
+    encode,
+    decodeUnsafe,
+    decode
+  };
+}
+var esm_default = base;
+
+// node_modules/bs58/src/esm/index.js
+var ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+var esm_default2 = esm_default(ALPHABET);
+
 // dist/util/binary.js
-var import_bs58 = __toESM(require("bs58"), 1);
 function readU8(u8, o) {
   if (o >= u8.length)
     return null;
@@ -286,7 +410,7 @@ function readBool(u8, o) {
 function readPubkey(u8, o) {
   if (o + 32 > u8.length)
     return null;
-  return import_bs58.default.encode(u8.subarray(o, o + 32));
+  return esm_default2.encode(u8.subarray(o, o + 32));
 }
 function readBorshString(u8, o) {
   const len = readU32LE(u8, o);
@@ -2346,9 +2470,6 @@ function parseWithdrawFromData(data, metadata) {
   };
   return { RaydiumCpmmWithdraw: ev };
 }
-
-// dist/logs/optimized_matcher.js
-var import_bs582 = __toESM(require("bs58"), 1);
 
 // dist/logs/raydium_amm.js
 var import_buffer2 = require("buffer");
@@ -4652,7 +4773,7 @@ function parseLogOptimized(log, signature, slot, txIndex, blockTimeUs, grpcRecvU
   if (programId === RAYDIUM_AMM_V4_PROGRAM_ID && log.indexOf("ray_log: ") >= 0) {
     if (eventTypeFilter && !eventTypeFilter.shouldInclude("RaydiumAmmV4Swap"))
       return null;
-    const rb2 = recentBlockhash && recentBlockhash.length > 0 ? import_bs582.default.encode(recentBlockhash) : void 0;
+    const rb2 = recentBlockhash && recentBlockhash.length > 0 ? esm_default2.encode(recentBlockhash) : void 0;
     const metadata2 = makeMetadata(signature, slot, txIndex, blockTimeUs, grpcRecvUs, rb2);
     return parseRayLogSwap(log, metadata2);
   }
@@ -4663,7 +4784,7 @@ function parseLogOptimized(log, signature, slot, txIndex, blockTimeUs, grpcRecvU
   if (disc5 === null)
     return null;
   const data = buf.subarray(8);
-  const rb = recentBlockhash && recentBlockhash.length > 0 ? import_bs582.default.encode(recentBlockhash) : void 0;
+  const rb = recentBlockhash && recentBlockhash.length > 0 ? esm_default2.encode(recentBlockhash) : void 0;
   const metadata = makeMetadata(signature, slot, txIndex, blockTimeUs, grpcRecvUs, rb);
   const isUnscopedSharedDiscriminator = !programId && (disc5 === PROGRAM_LOG_DISC.PUMPFUN_TRADE || disc5 === PROGRAM_LOG_DISC.RAYDIUM_CPMM_SWAP_BASE_IN);
   const et = programScopedDiscriminatorToEventType(programId, disc5);

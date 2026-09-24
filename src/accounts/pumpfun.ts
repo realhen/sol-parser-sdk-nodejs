@@ -19,19 +19,35 @@ import type {
 } from "../core/dex_event.js";
 import type { AccountData } from "./types.js";
 import { hasDiscriminator } from "./utils.js";
-import { readI64LE, readPubkey, readU128LE, readU16LE, readU32LE, readU64LE, readU8 } from "../util/binary.js";
-import { PUMP_FEES_PROGRAM_ID, PUMPFUN_PROGRAM_ID } from "../instr/program_ids.js";
+import {
+  readI64LE,
+  readPubkey,
+  readU128LE,
+  readU16LE,
+  readU32LE,
+  readU64LE,
+  readU8,
+} from "../util/binary.js";
+import {
+  PUMP_FEES_PROGRAM_ID,
+  PUMPFUN_PROGRAM_ID,
+} from "../instr/program_ids.js";
 
 const GLOBAL_DISC = Uint8Array.from([167, 232, 232, 177, 200, 108, 114, 127]);
 const GLOBAL_BODY = 1037;
-const BONDING_CURVE_DISC = Uint8Array.from([23, 183, 248, 55, 96, 216, 172, 96]);
-const BONDING_CURVE_BODY = 107;
-const BONDING_CURVE_CREATOR_FEE_BODY = 116;
+const BONDING_CURVE_DISC = Uint8Array.from([
+  23, 183, 248, 55, 96, 216, 172, 96,
+]);
+const BONDING_CURVE_FIELD_BOUNDARIES = [41, 73, 74, 75, 107, 115, 116];
 const BONDING_CURVE_HOLDER_REWARD_BODY = 117;
 const FEE_CONFIG_DISC = Uint8Array.from([143, 52, 146, 187, 219, 123, 76, 155]);
-const GLOBAL_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([202, 42, 246, 43, 142, 190, 30, 255]);
+const GLOBAL_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([
+  202, 42, 246, 43, 142, 190, 30, 255,
+]);
 const SHARING_CONFIG_DISC = Uint8Array.from([216, 74, 9, 0, 56, 140, 93, 75]);
-const USER_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([86, 255, 112, 14, 102, 53, 154, 250]);
+const USER_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([
+  86, 255, 112, 14, 102, 53, 154, 250,
+]);
 const MAX_FEE_TIERS = 64;
 const MAX_SHAREHOLDERS = 64;
 
@@ -51,15 +67,23 @@ export function isPumpfunSharingConfigAccount(data: Uint8Array): boolean {
   return hasDiscriminator(data, SHARING_CONFIG_DISC);
 }
 
-export function isPumpfunGlobalVolumeAccumulatorAccount(data: Uint8Array): boolean {
+export function isPumpfunGlobalVolumeAccumulatorAccount(
+  data: Uint8Array,
+): boolean {
   return hasDiscriminator(data, GLOBAL_VOLUME_ACCUMULATOR_DISC);
 }
 
-export function isPumpfunUserVolumeAccumulatorAccount(data: Uint8Array): boolean {
+export function isPumpfunUserVolumeAccumulatorAccount(
+  data: Uint8Array,
+): boolean {
   return hasDiscriminator(data, USER_VOLUME_ACCUMULATOR_DISC);
 }
 
-function readPubkeyArray(data: Uint8Array, offset: number, len: number): { value: string[]; next: number } | null {
+function readPubkeyArray(
+  data: Uint8Array,
+  offset: number,
+  len: number,
+): { value: string[]; next: number } | null {
   const value: string[] = [];
   let o = offset;
   for (let i = 0; i < len; i++) {
@@ -71,15 +95,29 @@ function readPubkeyArray(data: Uint8Array, offset: number, len: number): { value
   return { value, next: o };
 }
 
-function readFees(data: Uint8Array, offset: number): { value: PumpFeesFees; next: number } | null {
+function readFees(
+  data: Uint8Array,
+  offset: number,
+): { value: PumpFeesFees; next: number } | null {
   const lp_fee_bps = readU64LE(data, offset);
   const protocol_fee_bps = readU64LE(data, offset + 8);
   const creator_fee_bps = readU64LE(data, offset + 16);
-  if (lp_fee_bps === null || protocol_fee_bps === null || creator_fee_bps === null) return null;
-  return { value: { lp_fee_bps, protocol_fee_bps, creator_fee_bps }, next: offset + 24 };
+  if (
+    lp_fee_bps === null ||
+    protocol_fee_bps === null ||
+    creator_fee_bps === null
+  )
+    return null;
+  return {
+    value: { lp_fee_bps, protocol_fee_bps, creator_fee_bps },
+    next: offset + 24,
+  };
 }
 
-function readFeeTiers(data: Uint8Array, offset: number): { value: PumpFeesFeeTier[]; next: number } | null {
+function readFeeTiers(
+  data: Uint8Array,
+  offset: number,
+): { value: PumpFeesFeeTier[]; next: number } | null {
   const len = readU32LE(data, offset);
   if (len === null || len > MAX_FEE_TIERS) return null;
   let o = offset + 4;
@@ -96,7 +134,10 @@ function readFeeTiers(data: Uint8Array, offset: number): { value: PumpFeesFeeTie
   return { value, next: o };
 }
 
-function readShareholders(data: Uint8Array, offset: number): { value: PumpFeesShareholder[]; next: number } | null {
+function readShareholders(
+  data: Uint8Array,
+  offset: number,
+): { value: PumpFeesShareholder[]; next: number } | null {
   const len = readU32LE(data, offset);
   if (len === null || len > MAX_SHAREHOLDERS) return null;
   let o = offset + 4;
@@ -113,7 +154,10 @@ function readShareholders(data: Uint8Array, offset: number): { value: PumpFeesSh
   return { value, next: o };
 }
 
-export function parsePumpfunGlobal(account: AccountData, metadata: EventMetadata): DexEvent | null {
+export function parsePumpfunGlobal(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   if (account.data.length < 8 + GLOBAL_BODY) return null;
   if (!isPumpfunGlobalAccount(account.data)) return null;
 
@@ -232,23 +276,42 @@ export function parsePumpfunGlobal(account: AccountData, metadata: EventMetadata
     initial_virtual_quote_reserves,
     whitelisted_quote_mints,
   };
-  const ev: PumpFunGlobalAccountEvent = { metadata, pubkey: account.pubkey, global };
+  const ev: PumpFunGlobalAccountEvent = {
+    metadata,
+    pubkey: account.pubkey,
+    global,
+  };
   return { PumpFunGlobalAccount: ev };
 }
 
-export function parsePumpfunBondingCurve(account: AccountData, metadata: EventMetadata): DexEvent | null {
-  if (account.data.length < 8 + BONDING_CURVE_BODY) return null;
+/**
+ * Decodes a bonding curve at a complete historical or current field boundary.
+ * @param account - Account bytes, including the eight-byte Anchor discriminator.
+ * @param metadata - Caller-provided notification context.
+ * @returns The decoded curve, or null for a wrong discriminator or partial field.
+ * @remarks Fields absent from historical layouts default to zero/false and the
+ * all-zero public key. This decoder does not validate the account owner; use
+ * parseAccountUnified or validate ownership before calling it directly.
+ */
+export function parsePumpfunBondingCurve(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   const bodyLength = account.data.length - 8;
   if (
-    bodyLength !== BONDING_CURVE_BODY &&
-    bodyLength !== BONDING_CURVE_CREATOR_FEE_BODY &&
-    bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY
+    bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY &&
+    !BONDING_CURVE_FIELD_BOUNDARIES.includes(bodyLength)
   ) {
     return null;
   }
   if (!isPumpfunBondingCurveAccount(account.data)) return null;
 
-  const d = account.data.subarray(8);
+  const body = account.data.subarray(8);
+  const d =
+    bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY
+      ? new Uint8Array(BONDING_CURVE_HOLDER_REWARD_BODY)
+      : body;
+  if (d !== body) d.set(body);
   let o = 0;
 
   const virtual_token_reserves = readU64LE(d, o);
@@ -313,7 +376,10 @@ export function parsePumpfunBondingCurve(account: AccountData, metadata: EventMe
   return { PumpFunBondingCurveAccount: ev };
 }
 
-export function parsePumpfunFeeConfig(account: AccountData, metadata: EventMetadata): DexEvent | null {
+export function parsePumpfunFeeConfig(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   if (!isPumpfunFeeConfigAccount(account.data)) return null;
   const d = account.data.subarray(8);
   let o = 0;
@@ -339,11 +405,18 @@ export function parsePumpfunFeeConfig(account: AccountData, metadata: EventMetad
     fee_tiers: feeTiers.value,
     stable_fee_tiers: stableFeeTiers.value,
   };
-  const ev: PumpFunFeeConfigAccountEvent = { metadata, pubkey: account.pubkey, fee_config };
+  const ev: PumpFunFeeConfigAccountEvent = {
+    metadata,
+    pubkey: account.pubkey,
+    fee_config,
+  };
   return { PumpFunFeeConfigAccount: ev };
 }
 
-export function parsePumpfunSharingConfig(account: AccountData, metadata: EventMetadata): DexEvent | null {
+export function parsePumpfunSharingConfig(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   if (!isPumpfunSharingConfigAccount(account.data)) return null;
   const d = account.data.subarray(8);
   let o = 0;
@@ -379,11 +452,18 @@ export function parsePumpfunSharingConfig(account: AccountData, metadata: EventM
     admin_revoked,
     shareholders: shareholders.value,
   };
-  const ev: PumpFunSharingConfigAccountEvent = { metadata, pubkey: account.pubkey, sharing_config };
+  const ev: PumpFunSharingConfigAccountEvent = {
+    metadata,
+    pubkey: account.pubkey,
+    sharing_config,
+  };
   return { PumpFunSharingConfigAccount: ev };
 }
 
-export function parsePumpfunGlobalVolumeAccumulator(account: AccountData, metadata: EventMetadata): DexEvent | null {
+export function parsePumpfunGlobalVolumeAccumulator(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   if (!isPumpfunGlobalVolumeAccumulatorAccount(account.data)) return null;
   const d = account.data.subarray(8);
   let o = 0;
@@ -430,7 +510,10 @@ export function parsePumpfunGlobalVolumeAccumulator(account: AccountData, metada
   return { PumpFunGlobalVolumeAccumulatorAccount: ev };
 }
 
-export function parsePumpfunUserVolumeAccumulator(account: AccountData, metadata: EventMetadata): DexEvent | null {
+export function parsePumpfunUserVolumeAccumulator(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   if (!isPumpfunUserVolumeAccumulatorAccount(account.data)) return null;
   const d = account.data.subarray(8);
   let o = 0;
@@ -490,17 +573,28 @@ export function parsePumpfunUserVolumeAccumulator(account: AccountData, metadata
   return { PumpFunUserVolumeAccumulatorAccount: ev };
 }
 
-export function parsePumpfunAccount(account: AccountData, metadata: EventMetadata): DexEvent | null {
-  if (account.owner !== PUMPFUN_PROGRAM_ID && account.owner !== PUMP_FEES_PROGRAM_ID) return null;
-  if (isPumpfunFeeConfigAccount(account.data)) return parsePumpfunFeeConfig(account, metadata);
-  if (isPumpfunSharingConfigAccount(account.data)) return parsePumpfunSharingConfig(account, metadata);
+export function parsePumpfunAccount(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
+  if (
+    account.owner !== PUMPFUN_PROGRAM_ID &&
+    account.owner !== PUMP_FEES_PROGRAM_ID
+  )
+    return null;
+  if (isPumpfunFeeConfigAccount(account.data))
+    return parsePumpfunFeeConfig(account, metadata);
+  if (isPumpfunSharingConfigAccount(account.data))
+    return parsePumpfunSharingConfig(account, metadata);
   if (isPumpfunGlobalVolumeAccumulatorAccount(account.data)) {
     return parsePumpfunGlobalVolumeAccumulator(account, metadata);
   }
   if (isPumpfunUserVolumeAccumulatorAccount(account.data)) {
     return parsePumpfunUserVolumeAccumulator(account, metadata);
   }
-  if (isPumpfunBondingCurveAccount(account.data)) return parsePumpfunBondingCurve(account, metadata);
-  if (isPumpfunGlobalAccount(account.data)) return parsePumpfunGlobal(account, metadata);
+  if (isPumpfunBondingCurveAccount(account.data))
+    return parsePumpfunBondingCurve(account, metadata);
+  if (isPumpfunGlobalAccount(account.data))
+    return parsePumpfunGlobal(account, metadata);
   return null;
 }

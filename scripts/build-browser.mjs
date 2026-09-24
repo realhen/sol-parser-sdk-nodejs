@@ -20,7 +20,7 @@ await build({
   outbase: "dist",
   outExtension: { ".js": ".cjs" },
   bundle: true,
-  packages: "external",
+  external: ["buffer"],
   platform: "browser",
   format: "cjs",
   target: "es2022",
