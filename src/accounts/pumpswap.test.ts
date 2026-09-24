@@ -55,9 +55,40 @@ describe("PumpSwap pool account parser", () => {
     for (let bodyLength = 245; bodyLength < 253; bodyLength++) {
       expect(parsePumpswapPool(poolAccount(bodyLength), metadata)).toBeNull();
     }
-    for (let bodyLength = 254; bodyLength < 262; bodyLength++) {
+    for (let bodyLength = 254; bodyLength < 261; bodyLength++) {
       expect(parsePumpswapPool(poolAccount(bodyLength), metadata)).toBeNull();
     }
     expect(parsePumpswapPool(poolAccount(262, -1n), metadata)).not.toBeNull();
+  });
+});
+
+
+describe("historical PumpSwap pools", () => {
+  it("accepts complete field boundaries and rejects every partial field", () => {
+    const boundaries = [203, 235, 236, 237, 244, 253, 261, 262, 263];
+    for (let bodyLength = 0; bodyLength <= 263; bodyLength++) {
+      const event = parsePumpswapPool(poolAccount(bodyLength), metadata);
+      expect(event !== null, `body ${bodyLength}`).toBe(boundaries.includes(bodyLength));
+      if (event && "PumpSwapPoolAccount" in event) {
+        expect(event.PumpSwapPoolAccount.pool.creator_fee_bps).toBe(0n);
+        expect(event.PumpSwapPoolAccount.pool.is_holder_reward).toBe(false);
+      }
+    }
+  });
+
+  it("rejects a partial virtual reserve disguised as legacy allocation padding", () => {
+    const account = poolAccount(244);
+    account.data[8 + 237] = 1;
+    expect(parsePumpswapPool(account, metadata)).toBeNull();
+  });
+
+  it("retains fields present in the shorter serialized pool", () => {
+    const full = poolAccount(263, -987n, 250n);
+    const event = parsePumpswapPool({ ...full, data: full.data.slice(0, 8 + 261) }, metadata);
+    expect(event && "PumpSwapPoolAccount" in event).toBe(true);
+    if (!event || !("PumpSwapPoolAccount" in event)) throw new Error("Missing pool");
+    expect(event.PumpSwapPoolAccount.pool.virtual_quote_reserves).toBe(-987n);
+    expect(event.PumpSwapPoolAccount.pool.creator_fee_bps).toBe(250n);
+    expect(event.PumpSwapPoolAccount.pool.can_edit_creator_fee).toBe(false);
   });
 });
