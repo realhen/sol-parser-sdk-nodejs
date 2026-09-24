@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import bs58 from "bs58";
 import type { EventMetadata } from "../core/metadata.js";
 import type {
   DexEvent,
@@ -109,7 +109,7 @@ class Reader {
 
   pubkey(): string {
     const start = this.require(32);
-    return new PublicKey(this.data.subarray(start, start + 32)).toBase58();
+    return bs58.encode(this.data.subarray(start, start + 32));
   }
 
   bytes(len: number): number[] {

@@ -1,0 +1,18 @@
+import { Buffer } from "buffer";
+const PREFIX = "Program data: ";
+/** 从单行日志解码 Anchor `emit!` / program data。 */
+export function decodeProgramDataLine(log) {
+    const idx = log.indexOf(PREFIX);
+    if (idx < 0)
+        return null;
+    const trimmed = log.slice(idx + PREFIX.length).trim();
+    try {
+        const b = Buffer.from(trimmed, "base64");
+        if (b.length < 8)
+            return null;
+        return new Uint8Array(b);
+    }
+    catch {
+        return null;
+    }
+}

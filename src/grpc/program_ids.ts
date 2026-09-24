@@ -4,20 +4,22 @@
 import type { Protocol } from "./types.js";
 import type { AccountFilter, TransactionFilter } from "./types.js";
 
-export const PUMPFUN_PROGRAM_ID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
-export const PUMPSWAP_PROGRAM_ID = "pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA";
-export const PUMPSWAP_FEES_PROGRAM_ID = "pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ";
-export const PUMP_FEES_PROGRAM_ID = PUMPSWAP_FEES_PROGRAM_ID;
-/** Raydium LaunchLab program id. */
-export const RAYDIUM_LAUNCHLAB_PROGRAM_ID = "LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj";
-export const RAYDIUM_CPMM_PROGRAM_ID = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C";
-export const RAYDIUM_CLMM_PROGRAM_ID = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK";
-export const RAYDIUM_AMM_V4_PROGRAM_ID = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
-export const ORCA_WHIRLPOOL_PROGRAM_ID = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc";
-export const METEORA_POOLS_PROGRAM_ID = "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB";
-export const METEORA_DAMM_V2_PROGRAM_ID = "cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG";
-export const METEORA_DLMM_PROGRAM_ID = "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo";
-export const METEORA_DBC_PROGRAM_ID = "dbcij3LWUppWqq96dh6gJWwBifmcGfLSB5D4DuSMaqN";
+import {
+  PUMPFUN_PROGRAM_ID,
+  PUMPSWAP_PROGRAM_ID,
+  PUMPSWAP_FEES_PROGRAM_ID,
+  PUMP_FEES_PROGRAM_ID,
+  RAYDIUM_LAUNCHLAB_PROGRAM_ID,
+  RAYDIUM_CPMM_PROGRAM_ID,
+  RAYDIUM_CLMM_PROGRAM_ID,
+  RAYDIUM_AMM_V4_PROGRAM_ID,
+  ORCA_WHIRLPOOL_PROGRAM_ID,
+  METEORA_POOLS_PROGRAM_ID,
+  METEORA_DAMM_V2_PROGRAM_ID,
+  METEORA_DLMM_PROGRAM_ID,
+  METEORA_DBC_PROGRAM_ID,
+} from "../instr/program_ids.js";
+export * from "../instr/program_ids.js";
 
 /** 与 Rust `PROTOCOL_PROGRAM_IDS` 一致（仅含 Rust 中存在的协议） */
 export const PROTOCOL_PROGRAM_IDS: Record<Protocol, readonly string[]> = {
@@ -36,7 +38,9 @@ export const PROTOCOL_PROGRAM_IDS: Record<Protocol, readonly string[]> = {
 };
 
 /** 与 Rust `get_program_ids_for_protocols` 一致 */
-export function getProgramIdsForProtocols(protocols: readonly Protocol[]): string[] {
+export function getProgramIdsForProtocols(
+  protocols: readonly Protocol[],
+): string[] {
   const out: string[] = [];
   for (const p of protocols) {
     const ids = PROTOCOL_PROGRAM_IDS[p];
@@ -46,7 +50,9 @@ export function getProgramIdsForProtocols(protocols: readonly Protocol[]): strin
 }
 
 /** 与 Rust `TransactionFilter::for_protocols` 一致 */
-export function transactionFilterForProtocols(protocols: readonly Protocol[]): TransactionFilter {
+export function transactionFilterForProtocols(
+  protocols: readonly Protocol[],
+): TransactionFilter {
   return {
     account_include: getProgramIdsForProtocols(protocols),
     account_exclude: [],
@@ -63,10 +69,14 @@ export function transactionFilterForProtocols(protocols: readonly Protocol[]): T
  */
 export function transactionFilterForProtocolAccounts(
   protocol: Protocol,
-  accounts: readonly string[]
+  accounts: readonly string[],
 ): TransactionFilter {
   const trackedAccounts = [
-    ...new Set(accounts.map((account) => account.trim()).filter((account) => account.length > 0)),
+    ...new Set(
+      accounts
+        .map((account) => account.trim())
+        .filter((account) => account.length > 0),
+    ),
   ].sort();
   if (trackedAccounts.length === 0) {
     throw new RangeError("At least one tracked account is required");
@@ -80,7 +90,9 @@ export function transactionFilterForProtocolAccounts(
 }
 
 /** 与 Rust `AccountFilter::for_protocols` 一致 */
-export function accountFilterForProtocols(protocols: readonly Protocol[]): AccountFilter {
+export function accountFilterForProtocols(
+  protocols: readonly Protocol[],
+): AccountFilter {
   return {
     account: [],
     owner: getProgramIdsForProtocols(protocols),

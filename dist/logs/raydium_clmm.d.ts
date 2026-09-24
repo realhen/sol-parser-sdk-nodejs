@@ -1,0 +1,17 @@
+import type { EventMetadata } from "../core/metadata.js";
+import type { DexEvent } from "../core/dex_event.js";
+export declare function parseSwapFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseIncreaseLiquidityFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseDecreaseLiquidityFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseCreatePoolFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseCollectPersonalFeeFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseCollectProtocolFeeFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseLiquidityChangeFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseConfigChangeFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseCreatePersonalPositionFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseLiquidityCalculateFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseOpenLimitOrderFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseIncreaseLimitOrderFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseDecreaseLimitOrderFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseSettleLimitOrderFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;
+export declare function parseUpdateRewardInfosFromData(data: Uint8Array, metadata: EventMetadata): DexEvent | null;

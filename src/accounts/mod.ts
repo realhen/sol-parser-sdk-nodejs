@@ -1,8 +1,8 @@
 import type { EventMetadata } from "../core/metadata.js";
 import type { DexEvent } from "../core/dex_event.js";
 import type { AccountData } from "./types.js";
-import type { EventType, EventTypeFilter } from "../grpc/types.js";
-import { eventTypeFilterShouldIncludeDexEvent } from "../grpc/types.js";
+import type { EventType, EventTypeFilter } from "../core/event_filter.js";
+import { eventTypeFilterShouldIncludeDexEvent } from "../core/event_filter.js";
 import {
   ORCA_WHIRLPOOL_PROGRAM_ID,
   PUMP_FEES_PROGRAM_ID,
@@ -69,7 +69,6 @@ export {
 } from "./raydium_orca.js";
 export { hasDiscriminator } from "./utils.js";
 export { userWalletPubkeyForOnchainAccount } from "./wallet_resolve.js";
-export { rpcResolveUserWalletPubkey } from "./rpc_wallet.js";
 
 const ACCOUNT_EVENT_TYPES: EventType[] = [
   "TokenAccount",
@@ -100,7 +99,15 @@ function filterParsedEvent(ev: DexEvent | null, eventTypeFilter?: EventTypeFilte
   return eventTypeFilterShouldIncludeDexEvent(eventTypeFilter, ev) ? ev : null;
 }
 
-/** 账户数据统一解析入口 */
+/**
+ * Decodes supported account layouts from caller-supplied bytes and metadata.
+ * @param account - Account bytes and owner received from a trusted RPC source.
+ * @param metadata - Caller-owned context; account updates may omit transaction identity.
+ * @param eventTypeFilter - Optional selection of decoded account event types.
+ * @returns The supported decoded event, or null when no selected layout matches.
+ * @remarks This function performs no network requests or freshness validation. Callers
+ * must validate account ownership and select the correct subscription context.
+ */
 export function parseAccountUnified(
   account: AccountData,
   metadata: EventMetadata,

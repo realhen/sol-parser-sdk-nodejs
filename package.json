@@ -1,43 +1,29 @@
 {
   "name": "sol-parser-sdk",
-  "version": "0.5.15",
-  "description": "High-performance Solana DEX event parser for Node.js/TypeScript (Yellowstone gRPC, log parsing)",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "0.5.15-browser.1",
+  "description": "Browser-safe Solana account and DEX log decoders; no transport clients",
+  "main": "./dist/browser.js",
+  "types": "./dist/browser.d.ts",
   "files": [
     "dist",
     "README.md",
-    "README_CN.md",
-    "LICENSE",
-    ".env.example"
+    "LICENSE"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/0xfnzero/sol-parser-sdk-nodejs.git"
+    "url": "git+https://github.com/realhen/sol-parser-sdk-nodejs.git"
   },
   "bugs": {
-    "url": "https://github.com/0xfnzero/sol-parser-sdk-nodejs/issues"
+    "url": "https://github.com/realhen/sol-parser-sdk-nodejs/issues"
   },
-  "homepage": "https://github.com/0xfnzero/sol-parser-sdk-nodejs#readme",
+  "homepage": "https://github.com/realhen/sol-parser-sdk-nodejs#readme",
   "engines": {
     "node": ">=20.18.0"
   },
   "scripts": {
-    "build": "tsc && mkdir -p dist/shredstream && cp src/shredstream/shredstream.proto dist/shredstream/",
-    "prepublishOnly": "npm run build",
-    "check:dex-events": "tsx scripts/check-dex-event-parity.ts",
-    "verify:discriminators": "tsx scripts/verify-program-log-discriminators.ts",
-    "check:json-utils": "tsx scripts/check-json-utils.ts",
-    "check:discriminator-lut": "tsx scripts/check-discriminator-lut.ts",
-    "test": "vitest run",
-    "check:migration": "npm run check:dex-events && npm run verify:discriminators && npm run check:discriminator-lut && npm run check:json-utils && npm run build",
-    "example:grpc:devtrades": "tsx examples/devtrades_low_latency.ts",
-    "example:grpc:devtrades:pumpswap": "tsx examples/devtrades_pumpfun_pumpswap_low_latency.ts",
-    "example:grpc:pumpswap": "tsx examples/pumpswap_low_latency.ts",
-    "example:shredstream:subscribe": "tsx examples/shredstream_example.ts",
-    "example:shredstream:pumpfun-json": "tsx examples/shredstream_pumpfun_json.ts",
-    "example:shredstream": "tsx examples/shredstream_example.ts",
-    "example:shredstream:pumpfun": "tsx examples/shredstream_pumpfun_json.ts"
+    "build": "node scripts/build-browser.mjs",
+    "format": "prettier --write src/browser.ts src/core/event_filter.ts scripts/build-browser.mjs package.json tsconfig.browser.json README.md",
+    "format:check": "prettier --check src/browser.ts src/core/event_filter.ts scripts/build-browser.mjs package.json tsconfig.browser.json README.md"
   },
   "keywords": [
     "solana",
@@ -48,17 +34,71 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^22.19.17",
-    "dotenv": "^17.4.1",
-    "tsx": "^4.21.0",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.9"
+    "typescript": "5.6.3",
+    "esbuild": "0.28.2",
+    "prettier": "3.9.9"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.12.4",
-    "@grpc/proto-loader": "^0.7.13",
-    "@solana/web3.js": "^1.95.4",
-    "@triton-one/yellowstone-grpc": "7.0.0",
-    "bs58": "^6.0.0"
+    "bs58": "6.0.0",
+    "buffer": "6.0.3"
+  },
+  "type": "module",
+  "module": "./dist/browser.js",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js",
+      "require": "./dist/browser.cjs",
+      "default": "./dist/browser.js"
+    },
+    "./accounts": {
+      "types": "./dist/accounts/mod.d.ts",
+      "import": "./dist/accounts/mod.js",
+      "require": "./dist/accounts/mod.cjs",
+      "default": "./dist/accounts/mod.js"
+    },
+    "./core/unified_parser": {
+      "types": "./dist/core/unified_parser.d.ts",
+      "import": "./dist/core/unified_parser.js",
+      "require": "./dist/core/unified_parser.cjs",
+      "default": "./dist/core/unified_parser.js"
+    },
+    "./core/dex_event": {
+      "types": "./dist/core/dex_event.d.ts",
+      "import": "./dist/core/dex_event.js",
+      "require": "./dist/core/dex_event.cjs",
+      "default": "./dist/core/dex_event.js"
+    },
+    "./core/metadata": {
+      "types": "./dist/core/metadata.d.ts",
+      "import": "./dist/core/metadata.js",
+      "require": "./dist/core/metadata.cjs",
+      "default": "./dist/core/metadata.js"
+    },
+    "./core/event_filter": {
+      "types": "./dist/core/event_filter.d.ts",
+      "import": "./dist/core/event_filter.js",
+      "require": "./dist/core/event_filter.cjs",
+      "default": "./dist/core/event_filter.js"
+    },
+    "./grpc/types": {
+      "types": "./dist/core/event_filter.d.ts",
+      "import": "./dist/core/event_filter.js",
+      "require": "./dist/core/event_filter.cjs",
+      "default": "./dist/core/event_filter.js"
+    },
+    "./instr/program_ids": {
+      "types": "./dist/instr/program_ids.d.ts",
+      "import": "./dist/instr/program_ids.js",
+      "require": "./dist/instr/program_ids.cjs",
+      "default": "./dist/instr/program_ids.js"
+    },
+    "./util/market": {
+      "types": "./dist/util/market.d.ts",
+      "import": "./dist/util/market.js",
+      "require": "./dist/util/market.cjs",
+      "default": "./dist/util/market.js"
+    }
   }
 }

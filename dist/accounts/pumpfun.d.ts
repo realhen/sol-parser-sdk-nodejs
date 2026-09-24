@@ -1,0 +1,16 @@
+import type { EventMetadata } from "../core/metadata.js";
+import type { DexEvent } from "../core/dex_event.js";
+import type { AccountData } from "./types.js";
+export declare function isPumpfunGlobalAccount(data: Uint8Array): boolean;
+export declare function isPumpfunBondingCurveAccount(data: Uint8Array): boolean;
+export declare function isPumpfunFeeConfigAccount(data: Uint8Array): boolean;
+export declare function isPumpfunSharingConfigAccount(data: Uint8Array): boolean;
+export declare function isPumpfunGlobalVolumeAccumulatorAccount(data: Uint8Array): boolean;
+export declare function isPumpfunUserVolumeAccumulatorAccount(data: Uint8Array): boolean;
+export declare function parsePumpfunGlobal(account: AccountData, metadata: EventMetadata): DexEvent | null;
+export declare function parsePumpfunBondingCurve(account: AccountData, metadata: EventMetadata): DexEvent | null;
+export declare function parsePumpfunFeeConfig(account: AccountData, metadata: EventMetadata): DexEvent | null;
+export declare function parsePumpfunSharingConfig(account: AccountData, metadata: EventMetadata): DexEvent | null;
+export declare function parsePumpfunGlobalVolumeAccumulator(account: AccountData, metadata: EventMetadata): DexEvent | null;
+export declare function parsePumpfunUserVolumeAccumulator(account: AccountData, metadata: EventMetadata): DexEvent | null;
+export declare function parsePumpfunAccount(account: AccountData, metadata: EventMetadata): DexEvent | null;

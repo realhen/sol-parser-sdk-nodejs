@@ -1,0 +1,27 @@
+import { hasDiscriminator } from "./utils.js";
+import bs58 from "bs58";
+const NONCE_SIZE = 80;
+const NONCE_DISC = Uint8Array.from([1, 0, 0, 0, 1, 0, 0, 0]);
+export function isNonceAccount(data) {
+    return data.length >= 8 && hasDiscriminator(data, NONCE_DISC);
+}
+export function parseNonceAccount(account, metadata) {
+    const { data } = account;
+    if (account.owner !== "11111111111111111111111111111111" ||
+        data.length !== NONCE_SIZE ||
+        !isNonceAccount(data))
+        return null;
+    const authority = bs58.encode(data.subarray(8, 40));
+    const nonce = bs58.encode(data.subarray(40, 72));
+    const ev = {
+        metadata,
+        pubkey: account.pubkey,
+        executable: account.executable,
+        lamports: account.lamports,
+        owner: account.owner,
+        rent_epoch: account.rent_epoch,
+        nonce,
+        authority,
+    };
+    return { NonceAccount: ev };
+}
