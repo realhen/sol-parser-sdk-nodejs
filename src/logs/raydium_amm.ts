@@ -1,3 +1,4 @@
+import { Buffer } from "buffer";
 import type { EventMetadata } from "../core/metadata.js";
 import type {
   DexEvent,
