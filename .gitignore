@@ -3,3 +3,7 @@ dist/
 *.log
 .DS_Store
 .env
+
+browser/index.*
+browser/types/
+.browser-package-check-*/

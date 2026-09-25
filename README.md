@@ -42,6 +42,36 @@
 
 ---
 
+## Browser account and log decoding
+
+The additive browser entry contains pure account/log decoders and event filters.
+It performs no RPC, gRPC, or ShredStream I/O; supply account bytes, logs, and
+notification metadata from your own trusted transport.
+
+Native ESM (including Node ESM) uses the explicit file path:
+
+```ts
+import { parseAccountUnified, parseLogsOnly } from "sol-parser-sdk/browser/index.mjs";
+```
+
+CommonJS uses the browser directory entry:
+
+```js
+const { parseAccountUnified, parseLogsOnly } = require("sol-parser-sdk/browser");
+```
+
+Browser bundlers may also resolve `sol-parser-sdk/browser` through its `module`
+field. Both builds bundle their base58 and Buffer implementation; consumers do not
+need a global `Buffer` or Node transport polyfills. TypeScript declarations are
+included for both entry paths. Existing package-root and `dist/...` imports retain
+their Node behavior.
+
+Run `npm run build:browser` to generate the browser bundles and declarations, or
+`npm run check:browser` to build both targets and validate a packed consumer.
+Generated browser artifacts are included in npm packages, not committed to Git.
+
+---
+
 ## Release notes
 
 ### v0.5.15

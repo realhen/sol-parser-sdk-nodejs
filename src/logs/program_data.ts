@@ -1,3 +1,4 @@
+import { Buffer } from "buffer";
 const PREFIX = "Program data: ";
 
 /** 从单行日志解码 Anchor `emit!` / program data。 */
