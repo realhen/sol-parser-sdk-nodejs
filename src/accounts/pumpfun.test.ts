@@ -77,7 +77,7 @@ describe("PumpFun account parser", () => {
     expect(curve.can_edit_creator_fee).toBe(true);
     expect(curve.is_holder_reward).toBe(true);
 
-    for (let bodyLength = 108; bodyLength < 116; bodyLength++) {
+    for (let bodyLength = 108; bodyLength < 115; bodyLength++) {
       expect(parseAccountUnified({ ...account, data: account.data.slice(0, 8 + bodyLength) })).toBeNull();
     }
     expect(parseAccountUnified({ ...account, data: account.data.slice(0, 8 + 116) })).not.toBeNull();
@@ -155,5 +155,32 @@ describe("PumpFun account parser", () => {
 
     const metadata = { signature: "sig", slot: 1, tx_index: 0, block_time_us: 0, grpc_recv_us: 0 };
     expect(parseTokenAccount(account, metadata)).toBeNull();
+  });
+});
+
+
+describe("historical PumpFun bonding curves", () => {
+  it("accepts complete field boundaries and preserves available values", () => {
+    const full = bondingCurveAccountData(pk(7), pk(8), 250n);
+    const boundaries = [41, 73, 74, 75, 107, 115, 116, 117];
+    for (let bodyLength = 0; bodyLength <= 117; bodyLength++) {
+      const event = parseAccountUnified({
+        pubkey: "curve", executable: false, lamports: 0n,
+        owner: PUMPFUN_PROGRAM_ID, rent_epoch: 0n,
+        data: full.slice(0, 8 + bodyLength),
+      });
+      if (!boundaries.includes(bodyLength)) {
+        expect(event, `partial body ${bodyLength}`).toBeNull();
+        continue;
+      }
+      expect(event && "PumpFunBondingCurveAccount" in event).toBe(true);
+      if (!event || !("PumpFunBondingCurveAccount" in event)) throw new Error("Missing curve");
+      const curve = event.PumpFunBondingCurveAccount.bonding_curve;
+      expect(curve.virtual_quote_reserves).toBe(4_292_000_000n);
+      expect(curve.creator).toBe(bodyLength >= 73 ? pk(7).toBase58() : pk(0).toBase58());
+      expect(curve.quote_mint).toBe(bodyLength >= 107 ? pk(8).toBase58() : pk(0).toBase58());
+      expect(curve.creator_fee_bps).toBe(bodyLength >= 115 ? 250n : 0n);
+      expect(curve.is_holder_reward).toBe(bodyLength >= 117);
+    }
   });
 });

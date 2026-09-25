@@ -25,8 +25,7 @@ import { PUMP_FEES_PROGRAM_ID, PUMPFUN_PROGRAM_ID } from "../instr/program_ids.j
 const GLOBAL_DISC = Uint8Array.from([167, 232, 232, 177, 200, 108, 114, 127]);
 const GLOBAL_BODY = 1037;
 const BONDING_CURVE_DISC = Uint8Array.from([23, 183, 248, 55, 96, 216, 172, 96]);
-const BONDING_CURVE_BODY = 107;
-const BONDING_CURVE_CREATOR_FEE_BODY = 116;
+const BONDING_CURVE_FIELD_BOUNDARIES = [41, 73, 74, 75, 107, 115, 116];
 const BONDING_CURVE_HOLDER_REWARD_BODY = 117;
 const FEE_CONFIG_DISC = Uint8Array.from([143, 52, 146, 187, 219, 123, 76, 155]);
 const GLOBAL_VOLUME_ACCUMULATOR_DISC = Uint8Array.from([202, 42, 246, 43, 142, 190, 30, 255]);
@@ -236,19 +235,34 @@ export function parsePumpfunGlobal(account: AccountData, metadata: EventMetadata
   return { PumpFunGlobalAccount: ev };
 }
 
-export function parsePumpfunBondingCurve(account: AccountData, metadata: EventMetadata): DexEvent | null {
-  if (account.data.length < 8 + BONDING_CURVE_BODY) return null;
+/**
+ * Decodes a bonding curve at a complete historical or current field boundary.
+ * @param account - Account bytes, including the eight-byte Anchor discriminator.
+ * @param metadata - Caller-provided notification context.
+ * @returns The decoded curve, or null for a wrong discriminator or partial field.
+ * @remarks Fields absent from historical layouts default to zero/false and the
+ * all-zero public key. This decoder does not validate the account owner; use
+ * parseAccountUnified or validate ownership before calling it directly.
+ */
+export function parsePumpfunBondingCurve(
+  account: AccountData,
+  metadata: EventMetadata,
+): DexEvent | null {
   const bodyLength = account.data.length - 8;
   if (
-    bodyLength !== BONDING_CURVE_BODY &&
-    bodyLength !== BONDING_CURVE_CREATOR_FEE_BODY &&
-    bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY
+    bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY &&
+    !BONDING_CURVE_FIELD_BOUNDARIES.includes(bodyLength)
   ) {
     return null;
   }
   if (!isPumpfunBondingCurveAccount(account.data)) return null;
 
-  const d = account.data.subarray(8);
+  const body = account.data.subarray(8);
+  const d =
+    bodyLength < BONDING_CURVE_HOLDER_REWARD_BODY
+      ? new Uint8Array(BONDING_CURVE_HOLDER_REWARD_BODY)
+      : body;
+  if (d !== body) d.set(body);
   let o = 0;
 
   const virtual_token_reserves = readU64LE(d, o);
