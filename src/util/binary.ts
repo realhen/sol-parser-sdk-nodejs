@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import bs58 from "bs58";
 
 export function readU8(u8: Uint8Array, o: number): number | null {
   if (o >= u8.length) return null;
@@ -50,7 +50,7 @@ export function readBool(u8: Uint8Array, o: number): boolean | null {
 
 export function readPubkey(u8: Uint8Array, o: number): string | null {
   if (o + 32 > u8.length) return null;
-  return new PublicKey(u8.subarray(o, o + 32)).toBase58();
+  return bs58.encode(u8.subarray(o, o + 32));
 }
 
 export function readBorshString(u8: Uint8Array, o: number): { s: string; next: number } | null {

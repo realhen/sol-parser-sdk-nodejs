@@ -82,7 +82,7 @@ import {
   parseRaydiumLaunchlabFromDiscriminator,
   RAYDIUM_LAUNCHLAB_DISC,
 } from "./raydium_launchlab.js";
-import type { EventType, EventTypeFilter } from "../grpc/types.js";
+import type { EventType, EventTypeFilter } from "../core/event_filter.js";
 import { readDiscriminatorU64 } from "../util/binary.js";
 import { PROGRAM_LOG_DISC as DISC, u64leDiscriminator } from "./program_log_discriminators.js";
 import {
@@ -98,7 +98,7 @@ import {
   RAYDIUM_CLMM_PROGRAM_ID,
   RAYDIUM_CPMM_PROGRAM_ID,
   RAYDIUM_LAUNCHLAB_PROGRAM_ID,
-} from "../grpc/program_ids.js";
+} from "../instr/program_ids.js";
 
 const DLMM_DISC = {
   SWAP: u64leDiscriminator([81, 108, 227, 190, 205, 208, 10, 196]),
