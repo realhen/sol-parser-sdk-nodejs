@@ -11,9 +11,16 @@ export function isNonceAccount(data: Uint8Array): boolean {
   return data.length >= 8 && hasDiscriminator(data, NONCE_DISC);
 }
 
+/**
+ * Decodes an initialized current-version System Program nonce account.
+ * @param account - Source account owner and the complete 80-byte account data.
+ * @param metadata - Caller-provided notification context.
+ * @returns A nonce event, or null for another owner, state, version, or size.
+ */
 export function parseNonceAccount(account: AccountData, metadata: EventMetadata): DexEvent | null {
   const { data } = account;
-  if (data.length !== NONCE_SIZE) return null;
+  if (account.owner !== "11111111111111111111111111111111" ||
+      data.length !== NONCE_SIZE || !isNonceAccount(data)) return null;
   const authority = bs58.encode(data.subarray(8, 40));
   const nonce = bs58.encode(data.subarray(40, 72));
   const ev: NonceAccountEvent = {
